@@ -1,0 +1,36 @@
+meta {
+  name: Summarize sample abstract
+  type: http
+  seq: 2
+}
+
+post {
+  url: https://api.openai.com/v1/chat/completions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer $OPENAI_API_KEY
+}
+
+auth:bearer {
+  token: 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
+}
+
+body:json {
+  {
+    "model": "gpt-4o-mini",
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are a task-specific assistant assigned to generate summaries of scientific paper abstracts and full texts. All summaries must be under 75 words, in a friendly, conversational tone."
+      },
+      {
+        "role": "user",
+        "content": "\nSynthesis of antifreeze proteins (AFPs) is one of the adaptations of psychrophilic yeast to live in cold environments. AFPs demonstrate thermal hysteresis (TH) activity and inhibit the recrystallization of ice (IRI) during periodic temperature fluctuations. In this study, the Antarctic yeast strain 186, identified as Glaciozyma martinii, was found to synthesize an extracellular, glycosylated ~27 kDa ice-binding protein (GmAFP) exhibiting IRI activity. It is the first evidence of AFP secretion by the psychrophilic yeast Glaciozyma martinii. To scale up protein production, a synthetic gene from a closely related cold-adapted species, Glaciozyma antarctica, was expressed in Pichia pastoris GS115 strain. The recombinant 26.57 kD protein (GaAFP) displayed IRI activity and a cryoprotective effect in food storage. The addition of GaAFP to the stored frozen vegetables and fruits (carrot, kohlrabi, and blueberry) markedly reduced the drip loss during the thawing process and positively affected their structure, with an effect similar to glycerol. Moreover, GaAFP increased the cell survival of Saccharomyces cerevisiae after freezing. The insights from this study provided proof that AFPs from natural sources may serve as competent biodegradable, eco-friendly, non-cytotoxic and biocompatible substitutes for traditional cryoprotectants in enhancing the quality of frozen foods.\n"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+meta {
+  name: Solr Metadata for papers from past week
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://api.plos.org/search?q=publication_date:[2025-03-06T00:00:00Z TO 2025-03-13T23:59:59Z] AND journal:"PLOS ONE"&fl=id,title,abstract&rows=100&wt=json
+  body: none
+  auth: none
+}
+
+params:query {
+  q: publication_date:[2025-03-06T00:00:00Z TO 2025-03-13T23:59:59Z] AND journal:"PLOS ONE"
+  fl: id,title,abstract
+  rows: 100
+  wt: json
+}
