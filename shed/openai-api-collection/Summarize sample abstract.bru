@@ -7,16 +7,12 @@ meta {
 post {
   url: https://api.openai.com/v1/chat/completions
   body: json
-  auth: bearer
+  auth: none
 }
 
 headers {
   Content-Type: application/json
   Authorization: Bearer $OPENAI_API_KEY
-}
-
-auth:bearer {
-  token: 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
 }
 
 body:json {
