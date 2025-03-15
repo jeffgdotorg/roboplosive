@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: https://api.plos.org/search?q=publication_date:[2025-03-06T00:00:00Z TO 2025-03-13T23:59:59Z] AND journal:"PLOS ONE"&fl=id,title,abstract,publication_date&rows=100&wt=json
+  url: https://api.plos.org/search?q=publication_date:[2025-03-06T00:00:00Z TO 2025-03-13T23:59:59Z] AND journal:"PLOS ONE"&fl=id,title,abstract_primary_display,publication_date,author_display&rows=100&wt=json
   body: none
   auth: none
 }
 
 params:query {
   q: publication_date:[2025-03-06T00:00:00Z TO 2025-03-13T23:59:59Z] AND journal:"PLOS ONE"
-  fl: id,title,abstract,publication_date
+  fl: id,title,abstract_primary_display,publication_date,author_display
   rows: 100
   wt: json
 }
