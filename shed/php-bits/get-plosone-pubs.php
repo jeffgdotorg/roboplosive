@@ -8,9 +8,12 @@ $pollyClient = new Aws\Polly\PollyClient([
     'region'  => 'us-east-1',
     'credentials' => [
         'key' => getenv('AWS_ACCESS_KEY'),
-        'secret' => getenv('AWS_ACCESS_KEY')
+        'secret' => getenv('AWS_SECRET_ACCESS_KEY')
     ]
 ]);
+
+// Maximum number of segments per episode
+$max_segments = 3;
 
 /**
  * Summarize the abstract using OpenAI API.
@@ -79,15 +82,16 @@ function summarize_abstract_openai($abstract, $api_key) {
 function tts_segment_polly($text, $voice_idx, $output_file) {
     global $pollyClient;  // Initialized outside the function
 
-    $voices[] = [ 'Stephen', 'Danielle' ];
+    $voices = [ 'Stephen', 'Danielle' ];
     if ($voice_idx > count($voices) - 1) $voice_idx = 0;
+    $voice_id = $voices[$voice_idx];
 
     try {
         $result = $pollyClient->synthesizeSpeech([
             'Text' => $text,
             'OutputFormat' => 'mp3',
             'Engine' => 'generative',
-            'VoiceId' => $voices[$voice_idx],
+            'VoiceId' => $voice_id,
             'TextType' => 'text'
         ]);
 
@@ -110,14 +114,20 @@ function tts_segment_polly($text, $voice_idx, $output_file) {
  * @return string Text of episode intro, ready for TTS
  */
 function make_intro_text($docs) {
-    $article_count = count($docs);
+    global $max_segments;
+    if (count($docs) <= $max_segments) {
+        $article_count = count($docs);
+    } else {
+        $article_count = $max_segments;
+    }
+
     return "
-    Welcome to Roboplosive, the daily science podcast that summarizes recently
-    published papers from the scientific literature.
-    
-    In this episode we cover {$article_count} publications from the journal PLOS ONE.
-    Data Provided by PLOS.
-    ";
+Welcome to Roboplosive, the daily science podcast that summarizes recently
+published papers from the scientific literature.
+
+In this episode we cover {$article_count} publications from the journal PLOSS ONE.
+Data Provided by PLOSS.
+";
 }
 
 /**
@@ -128,16 +138,21 @@ function make_intro_text($docs) {
  * @return string The segment text, ready for TTS
  */
 function make_segment_text($doc, $summary) {
+    echo $doc['title'] . "\n";
     $segment_title = $doc['title'];
     $author_lead = $doc['author_lead'];
     $author_count = $doc['author_count'];
-    $segment_body = summarize_abstract_openai($doc['abstract'], getenv('OPENAI_API_KEY'));
+
+    $author_or_authors = "author";
+    if ($author_count > 1) {
+        $author_or_authors = "authors";
+    }
     return "
-    {$segment_title}
-    
-    Lead author {$author_lead}. This paper has {$author_count} authors.
-    
-    {$segment_body}
+{$segment_title}
+
+Lead author {$author_lead}. This paper has {$author_count} {$author_or_authors}.
+
+{$summary}
     ";
 }
 
@@ -227,4 +242,31 @@ function get_plos_docs()
 }
 
 // Main execution starts here
+
+// Fetch the article data
 $episode_docs = get_plos_docs();
+
+// Create the intro text
+$intro_text = make_intro_text($episode_docs);
+
+// Create the segment texts
+$idx = 0;
+foreach ($episode_docs as $episode_doc) {
+    $segment_summary = summarize_abstract_openai($episode_doc['abstract'], getenv('OPENAI_API_KEY'));
+    $segment_texts[] = make_segment_text($episode_doc, $segment_summary);
+    ++$idx;
+    if ($idx >= $max_segments) {
+        break;
+    }
+}
+
+tts_segment_polly($intro_text, 0, '00_intro.mp3');
+$idx = 0;
+if (!empty($segment_texts)) {
+    foreach ($segment_texts as $segment_text) {
+        ++$idx;
+        $voice_idx = $idx % 2;
+        $out_file = "01_segment_{$idx}.mp3";
+        tts_segment_polly($segment_text, $voice_idx, $out_file);
+    }
+}
