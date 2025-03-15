@@ -10,7 +10,7 @@ $pub_date_range = "[{$week_ago_text} TO {$now_text}]";
 $plos_api_url = "https://api.plos.org/search";
 $plos_api_query = http_build_query(array(
     "q" => "publication_date:{$pub_date_range} AND journal:\"PLOS ONE\"",
-    "fl" => "id,title,abstract,publication_date",
+    "fl" => "id,title,author_display,abstract_primary_display,publication_date",
     "rows" => 100,
     "wt" => "json"
     ));
@@ -42,11 +42,13 @@ if ($plos_api_data === null && json_last_error() !== JSON_ERROR_NONE) {
 if (isset($plos_api_data['response']) && isset($plos_api_data['response']['docs'])) {
     $plos_docs = $plos_api_data['response']['docs'];
     foreach ($plos_docs as $plos_doc) {
-        if (!empty($plos_doc['abstract'])) {
+        if (!empty($plos_doc['abstract_primary_display'])) {
             $usable_plos_docs[] = [
                 'id' => $plos_doc['id'],
                 'title' => $plos_doc['title'],
-                'abstract' => $plos_doc['abstract'][0],
+                'author_lead' => $plos_doc['author_display'][0],
+                'author_count' => count($plos_doc['author_display']),
+                'abstract' => $plos_doc['abstract_primary_display'][0],
                 'publication_date' => $plos_doc['publication_date']
             ];
         }
@@ -60,6 +62,5 @@ if (empty($usable_plos_docs)) {
     exit;
 }
 
-print_r($usable_plos_docs);
 
 ?>
