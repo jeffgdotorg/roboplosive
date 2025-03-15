@@ -1,4 +1,62 @@
 <?php
+
+/**
+ * Summarize the abstract using OpenAI API.
+ *
+ * @param string $abstract The abstract text to summarize.
+ * @param string $api_key  The OpenAI API key.
+ * @return string The summary of the abstract.
+ */
+function summarize_abstract_openai($abstract, $api_key) {
+    $url = "https://api.openai.com/v1/chat/completions";
+    $model = "gpt-4o-mini";
+    $dev_prompt = "You are a task-specific assistant assigned to generate summaries of scientific paper abstracts and full texts. All summaries must be under 75 words, in a friendly, conversational tone.";
+
+    $data = [
+        'model' => $model,
+        'messages' => [
+            [
+                'role' => 'developer',
+                'content' => $dev_prompt
+            ],
+            [
+                'role' => 'user',
+                'content' => $abstract
+            ]
+        ]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Content-Type: application/json",
+        "Authorization: Bearer " . $api_key
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
+    // Execute the OpenAI API curl operation and get the response
+    $response = curl_exec($ch);
+
+    // Check for errors
+    if (curl_error($ch)) {
+        echo 'cURL error: ' . curl_error($ch) . "\n";
+        curl_close($ch);
+        return false;
+    }
+    // Close the cURL session
+    curl_close($ch);
+
+    // Decode the response and extract the summary
+    $response_data = json_decode($response, true);
+    if (isset($response_data['choices'][0]['message']['content'])) {
+        return trim($response_data['choices'][0]['message']['content']);
+    }
+    echo "Error: OpenAI response lacks choices[0].message.content\n";
+    return false;
+}
+
+
 // Tee up the date range Solr query parameter for passing to the PLOS API
 $now = new DateTime();
 $now->setTime(0, 0, 0);
@@ -64,5 +122,12 @@ if (empty($usable_plos_docs)) {
     exit;
 }
 
-print_r($usable_plos_docs);
+echo "Article with DOI " . $usable_plos_docs[0]['id'] . "\n";
+echo "Abstract:\n=========\n" . trim($usable_plos_docs[0]['abstract']) . "\n\n";
+$summary = summarize_abstract_openai($usable_plos_docs[0]['abstract'], getenv('OPENAI_API_KEY'));
+if ($summary === false) {
+    echo "Something went wrong in summarization\n";
+    exit;
+}
+echo "Summary:\n========\n" . $summary . "\n\n";
 ?>
