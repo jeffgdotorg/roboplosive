@@ -13,7 +13,7 @@ $pollyClient = new Aws\Polly\PollyClient([
 ]);
 
 // Maximum number of segments per episode
-$max_segments = 3;
+$max_segments = 10;
 
 /**
  * Summarize the abstract using OpenAI API.
@@ -125,7 +125,7 @@ function make_intro_text($docs) {
 Welcome to Roboplosive, the daily science podcast that summarizes recently
 published papers from the scientific literature.
 
-In this episode we cover {$article_count} publications from the journal PLOSS ONE.
+This episode covers {$article_count} publications from the journal PLOSS ONE.
 Data Provided by PLOSS.
 ";
 }
@@ -244,13 +244,16 @@ function get_plos_docs()
 // Main execution starts here
 
 // Fetch the article data
+echo "Fetching segment articles from PLOS API... ";
 $episode_docs = get_plos_docs();
+echo "done.\n";
 
 // Create the intro text
 $intro_text = make_intro_text($episode_docs);
 
 // Create the segment texts
 $idx = 0;
+echo "Summarizing " . count($episode_docs) . " (hard max of {$max_segments}) into segment texts... ";
 foreach ($episode_docs as $episode_doc) {
     $segment_summary = summarize_abstract_openai($episode_doc['abstract'], getenv('OPENAI_API_KEY'));
     $segment_texts[] = make_segment_text($episode_doc, $segment_summary);
@@ -259,14 +262,37 @@ foreach ($episode_docs as $episode_doc) {
         break;
     }
 }
+echo "done.\n";
 
+echo "Rendering intro MP3... ";
 tts_segment_polly($intro_text, 0, '00_intro.mp3');
+echo "done.\n";
+
+// Initialize an array of MP3 files with our intro one
+$mp3_files[] = '00_intro.mp3';
 $idx = 0;
 if (!empty($segment_texts)) {
+    echo "Rendering segment MP3s... ";
     foreach ($segment_texts as $segment_text) {
+        // This var tracks the segment number we're handling
         ++$idx;
+
+        // Make a zero-padded rendition of $idx for use in filenames
+        $idx_fmt = sprintf("%02d", $idx);
+
+        // Use modulo-2 of $idx to alternate between voices when we render
         $voice_idx = $idx % 2;
-        $out_file = "01_segment_{$idx}.mp3";
+
+        $out_file = "01_segment_{$idx_fmt}.mp3";
         tts_segment_polly($segment_text, $voice_idx, $out_file);
+
+        // Add this segment file to the MP3 file array
+        $mp3_files[] = $out_file;
     }
+    echo "done.\n";
+
+    $concat_mp3s = implode(' ', $mp3_files);
+    echo "Concatenating MP3s: {$concat_mp3s}... ";
+    shell_exec("sox $concat_mp3s episode.mp3");
+    echo "done.\n";
 }
