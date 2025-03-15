@@ -1,9 +1,11 @@
 <?php
 // Tee up the date range Solr query parameter for passing to the PLOS API
-$now = time();
-$week_ago = time() - (60 * 60 * 24 * 7);
-$week_ago_text = strftime("%Y-%m-%dT00:00:00Z", $week_ago);
-$now_text = strftime("%Y-%m-%dT00:00:00Z", $now);
+$now = new DateTime();
+$now->setTime(0, 0, 0);
+$week_ago = (new DateTime())->modify('-1 week');
+$week_ago->setTime(0, 0, 0);
+$week_ago_text = $week_ago->format('Y-m-d\TH:i:s\Z');
+$now_text = $now->format('Y-m-d\TH:i:s\Z');
 $pub_date_range = "[{$week_ago_text} TO {$now_text}]";
 
 // Build the PLOS API URL
@@ -62,5 +64,5 @@ if (empty($usable_plos_docs)) {
     exit;
 }
 
-
+print_r($usable_plos_docs);
 ?>
