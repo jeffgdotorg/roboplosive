@@ -1,6 +1,4 @@
 <?php
-#
-
 // Tee up the date range Solr query parameter for passing to the PLOS API
 $now = time();
 $week_ago = time() - (60 * 60 * 24 * 7);
@@ -12,7 +10,7 @@ $pub_date_range = "[{$week_ago_text} TO {$now_text}]";
 $plos_api_url = "https://api.plos.org/search";
 $plos_api_query = http_build_query(array(
     "q" => "publication_date:{$pub_date_range} AND journal:\"PLOS ONE\"",
-    "fl" => "id,title,abstract",
+    "fl" => "id,title,abstract,publication_date",
     "rows" => 100,
     "wt" => "json"
     ));
@@ -48,19 +46,20 @@ if (isset($plos_api_data['response']) && isset($plos_api_data['response']['docs'
             $usable_plos_docs[] = [
                 'id' => $plos_doc['id'],
                 'title' => $plos_doc['title'],
-                'abstract' => $plos_doc['abstract'][0]
+                'abstract' => $plos_doc['abstract'][0],
+                'publication_date' => $plos_doc['publication_date']
             ];
         }
     }
 } else {
     echo "No documents found in PLOS API response";
 }
-if (!empty($usable_plos_docs)) {
-    print_r($usable_plos_docs);
-} else {
+if (empty($usable_plos_docs)) {
     $total_docs = count($plos_api_data['response']['docs']);
     echo "Error: No usable articles found among the {$total_docs} in PLOS API response";
     exit;
 }
+
+print_r($usable_plos_docs);
 
 ?>
